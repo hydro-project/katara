@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+# compiles benchmark and run switch converter and instruction namer on it
+
+file="$1"
+ext="${file##*\.}"
+
+clang_out=${file/.$ext/.ll}
+
+echo "output to:" $clang_out
+
+include_path="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include"
+
+#clang -g -I $include_path -c -emit-llvm -S $file -o $clang_out
+if [[ $file == *.c ]]
+then
+  clang -O0 -I $include_path -I../headers -c -emit-llvm -S $file -o $clang_out
+else
+  clang++ -std=c++17 -O0 -I $include_path -I../headers -c -emit-llvm -S $file -o $clang_out
+fi
+
+#opt -lowerswitch -instnamer -S $clang_out > tmp.ll
+opt -load ../llvm-pass/build/addEmptyBlocks/libAddEmptyBlocksPass.so -addEmptyBlock -lowerinvoke --unreachableblockelim -instnamer -S $clang_out > tmp.ll
+
+mv tmp.ll $clang_out
+
+loops_out=${file/.$ext/.loops}
+echo "output loops info to:" $loops_out
+opt -analyze -loops $clang_out > $loops_out

@@ -1,0 +1,11 @@
+!shell.nix
+.DS_Store
+*.pyc
+llvm-pass/build/
+synthesisLogs/
+tests/*.ll
+tests/*.loops
+results*.csv
+search*.csv
+distribution*.png
+dist/

@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "katara"
+version = "0.1.0"
+description = ""
+authors = ["Shadaj Laddad <shadaj@users.noreply.github.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.11"
+metalift = { git = "https://github.com/metalift/metalift.git", branch = "main" }
+
+[tool.poetry.dev-dependencies]
+mypy = "^0.950"
+black = "22.3.0" # make sure to update ci.yml!
+autoflake = "^1.4"
+pandas = "^1.4.3"
+matplotlib = "^3.5.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

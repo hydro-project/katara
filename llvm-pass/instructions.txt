@@ -1,0 +1,4 @@
+1. mkdir build
+2. cd build; cmake ../
+3. make
+4. built library is in build/addEmptyBlocks/
