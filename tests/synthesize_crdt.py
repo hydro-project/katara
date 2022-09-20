@@ -284,9 +284,9 @@ if __name__ == "__main__":
     else:
         benches = [bench]
 
-    useOpList = False
-    if mode == "synth-oplist":
-        useOpList = True
+    useOpList = True
+    if mode == "synth-unbounded":
+        useOpList = False
 
     bounded_bench_str = "bounded-pruning" if useOpList else "direct-unbounded"
 
