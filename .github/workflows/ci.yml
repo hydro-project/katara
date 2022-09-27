@@ -1,0 +1,127 @@
+name: Metalift CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  release:
+    types: [published]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: psf/black@stable
+        with:
+          black_args: --check --diff .
+          version: "22.3.0"
+
+  mypy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: "recursive"
+
+      - uses: cachix/install-nix-action@v16
+        with:
+          nix_path: nixpkgs=channel:nixos-22.05
+
+      - name: Cache Nix store
+        id: cache
+        uses: actions/cache@v2
+        with:
+          path: ~/nix-cache
+          key: nix-ci-shell-cache-${{ hashFiles('ci-shell.nix') }}-${{ hashFiles('poetry.lock') }}
+
+      - name: Load Nix cache
+        if: steps.cache.outputs.cache-hit == 'true'
+        run: |
+          nix-store --import < ~/nix-cache/cache.nar
+          rm -rf ~/nix-cache
+
+      - name: Run mypy
+        shell: nix-shell ci-shell.nix --run "bash -e {0}"
+        run: mypy .
+
+      - name: Save Nix cache
+        run: ./ci-util/cache-nix.sh
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [lint, mypy]
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: "recursive"
+
+    - uses: cachix/install-nix-action@v16
+      with:
+        nix_path: nixpkgs=channel:nixos-22.05
+
+    - name: Cache Nix store
+      id: cache
+      uses: actions/cache@v2
+      with:
+        path: ~/nix-cache
+        key: nix-ci-shell-cache-${{ hashFiles('ci-shell.nix') }}-${{ hashFiles('poetry.lock') }}
+
+    - name: Load Nix cache
+      if: steps.cache.outputs.cache-hit == 'true'
+      run: |
+        nix-store --import < ~/nix-cache/cache.nar
+        rm -rf ~/nix-cache
+
+    # https://github.com/Bogdanp/setup-racket-cache-example
+    - name: Cache Racket dependencies
+      id: cache-racket
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cache/racket
+          ~/.local/share/racket
+        key: ${{ runner.os }}-racket-8.4-rosette-4.1
+
+    - name: Install Racket
+      uses: Bogdanp/setup-racket@v1.7
+      with:
+        architecture: 'x64'
+        distribution: 'full'
+        variant: 'CS'
+        version: '8.4'
+
+    - name: Install Rosette (4.1)
+      run: |
+        raco pkg install --auto --skip-installed https://github.com/emina/rosette.git#10178550a0a21e6d80598d0f43c33c9228728f14
+
+    - name: Build LLVM Pass
+      shell: nix-shell ci-shell.nix --run "bash -e {0}"
+      run: |
+        cd llvm-pass
+        mkdir build
+        cd build
+        cmake ..
+        make
+        cd ..
+
+    - name: Build Test Inputs
+      shell: nix-shell ci-shell.nix --run "bash -e {0}"
+      run: |
+        cd tests
+        ./compile-all
+        cd ..
+
+    - name: Test CRDT Synthesis (fixed)
+      shell: nix-shell ci-shell.nix --run "bash -e {0}"
+      run: |
+        python -m tests.synthesize_crdt synth-oplist g_set fixed
+        python -m tests.synthesize_crdt synth-oplist 2p_set fixed
+        python -m tests.synthesize_crdt synth-oplist flag_ew fixed
+        python -m tests.synthesize_crdt synth-oplist flag_dw fixed
+        python -m tests.synthesize_crdt synth-oplist grow_only_counter fixed
+
+    - name: Save Nix cache
+      run: ./ci-util/cache-nix.sh

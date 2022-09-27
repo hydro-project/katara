@@ -1,0 +1,3 @@
+[submodule "metalift"]
+	path = metalift
+	url = git@github.com:metalift/metalift.git

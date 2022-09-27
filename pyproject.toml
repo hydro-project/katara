@@ -24,7 +24,5 @@ line-length = 88
 target-version = ['py38']
 extend-exclude = '''
 ^/tests|
-^/website|
-^/rosette-packages|
-^/crdt_tests
+^/rosette-packages
 '''

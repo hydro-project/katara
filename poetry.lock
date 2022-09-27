@@ -1,6 +1,6 @@
 [[package]]
 name = "autoflake"
-version = "1.6.0"
+version = "1.6.1"
 description = "Removes unused imports and unused variables"
 category = "dev"
 optional = false
@@ -109,19 +109,15 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "llvmlite"
-version = "0.38.0+2.gc418eb1"
+version = "0+unknown"
 description = "lightweight wrapper around basic LLVM functionality"
 category = "main"
 optional = false
 python-versions = ">=3.7,<3.11"
-develop = false
 
 [package.source]
-type = "git"
-url = "https://github.com/metalift/llvmlite.git"
-reference = "patched-metalift"
-resolved_reference = "c418eb18a78f49d9a059c50bd992f732432b9fe5"
-
+type = "url"
+url = "https://github.com/metalift/llvmlite/archive/c418eb18a78f49d9a059c50bd992f732432b9fe5.zip"
 [[package]]
 name = "matplotlib"
 version = "3.6.0"
@@ -152,14 +148,14 @@ python-versions = ">=3.8,<3.11"
 develop = false
 
 [package.dependencies]
-llvmlite = {git = "https://github.com/metalift/llvmlite.git", branch = "patched-metalift"}
+llvmlite = {url = "https://github.com/metalift/llvmlite/archive/c418eb18a78f49d9a059c50bd992f732432b9fe5.zip"}
 pyparsing = "^3.0.8"
 
 [package.source]
 type = "git"
 url = "https://github.com/metalift/metalift.git"
 reference = "main"
-resolved_reference = "eb804da078c0382caf29bd380b837ec7f8fd7e82"
+resolved_reference = "d966c78828bd15aa7cd3c7cf2c20c24fbe88407a"
 
 [[package]]
 name = "mypy"
@@ -343,8 +339,8 @@ content-hash = "7b849ca16e17782700b2a65712e75cc9cc2bbb41d78d07447f3582537ebdb135
 
 [metadata.files]
 autoflake = [
-    {file = "autoflake-1.6.0-py2.py3-none-any.whl", hash = "sha256:d5de7da3786809bbdedbdbdeecbb410d55277b3492a4a3ede882998f1e87f156"},
-    {file = "autoflake-1.6.0.tar.gz", hash = "sha256:6d313038abf4ad829cb88c9b01cd16387369ac529842bcd7f25a967ab4e99b8f"},
+    {file = "autoflake-1.6.1-py2.py3-none-any.whl", hash = "sha256:dfef4c851fb07e6111f9115d3e7c8c52d8564cbf71c12ade2d8b8a2a7b8bd176"},
+    {file = "autoflake-1.6.1.tar.gz", hash = "sha256:72bce741144ef6db26005d47dba242c1fd6a91ea53f7f4c5a90ad4b051e394c2"},
 ]
 black = [
     {file = "black-22.3.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:2497f9c2386572e28921fa8bec7be3e51de6801f7459dffd6e62492531c47e09"},
