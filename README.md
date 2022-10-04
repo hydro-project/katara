@@ -6,7 +6,7 @@
 </div>
 <p align="center"><i>Synthesize CRDTs that mirror your existing data types!</i></p>
 
-Katara is a program synthesis engine that can automatically generate CRDT designs that match the behavior of a sequential data type annotated with a conflict resolution policy for non-commutative operations. See our [paper](https://arxiv.org/pdf/2205.12425.pdf) for more information!
+Katara is a program synthesis engine that can automatically generate CRDT designs that mirror the behavior of a sequential data type annotated with a conflict resolution policy for non-commutative operations. See our [paper](https://arxiv.org/pdf/2205.12425.pdf) for more information!
 
 ## Setup
 First, make sure you pull the submodule for [metalift](https://github.com/metalift/metalift) by running:
