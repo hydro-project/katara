@@ -47,7 +47,7 @@ You'll need the following dependencies installed to use Katara:
 
 We use [Poetry](https://python-poetry.org/) for dependency management. To set up the environment, simply install Poetry, run `poetry install`, and then `poetry shell` to enter an environment with the dependencies installed.
 
-### Build the LLVM Pass
+## Build the LLVM Pass
 
 **We currently support LLVM 11**
 
