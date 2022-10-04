@@ -9,6 +9,11 @@
 Katara is a program synthesis engine that can automatically generate CRDT designs that match the behavior of a sequential data type annotated with a conflict resolution policy for non-commutative operations. See our [paper](https://arxiv.org/pdf/2205.12425.pdf) for more information!
 
 ## Setup
+First, make sure you pull the submodule for [metalift](https://github.com/metalift/metalift) by running:
+```bash
+$ git submodule update --init --recursive
+```
+
 ### Install (with Nix)
 To get a development environment up and running, one option is to use [Nix](https://nixos.org/), which can automatically pull and build the necessary dependencies. First, you'll need to [install Nix](https://nixos.org/download.html). Note that this _will_ require temporary root access as Nix sets up a daemon to handle builds, and will set up a separate volume for storing build artifacts if on macOS.
 
