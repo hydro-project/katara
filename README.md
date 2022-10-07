@@ -1,9 +1,5 @@
-<div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./katara-dark.png">
-    <img alt="Katara Logo" src="./katara-light.png">
-  </picture>
-</div>
+<img align="center" src="./katara-light.png#gh-light-mode-only"/>
+<img align="center" src="./katara-dark.png#gh-dark-mode-only"/>
 <p align="center"><i>Synthesize CRDTs that mirror your existing data types!</i></p>
 
 Katara is a program synthesis engine that can automatically generate CRDT designs that mirror the behavior of a sequential data type annotated with a conflict resolution policy for non-commutative operations. See our [paper](https://arxiv.org/pdf/2205.12425.pdf) for more information!
