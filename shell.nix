@@ -10,6 +10,12 @@ with pkgs;
   projectDir = ./.;
   preferWheels = true;
 
+  overrides = poetry2nix.overrides.withDefaults (self: super: {
+    python-dateutil = pkgs.python38Packages.python-dateutil;
+    numpy = pkgs.python38Packages.numpy;
+    pandas = pkgs.python38Packages.pandas;
+  });
+
   editablePackageSources = {
     metalift = ./metalift;
   };
