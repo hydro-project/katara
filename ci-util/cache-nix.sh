@@ -2,13 +2,13 @@
 
 cur_dir=$(pwd)
 
+paths_to_save=$(nix-store --query --references $(nix path-info --derivation ".#devShell.x86_64-linux.inputDerivation") | \
+  xargs nix-store --realise | \
+  xargs nix-store --query --requisites)
+
 mkdir ~/nix-cache
 
 cd ~/nix-cache
-
-paths_to_save=$(nix-store --query --references $(nix-instantiate $cur_dir/ci-shell.nix) | \
-  xargs nix-store --realise | \
-  xargs nix-store --query --requisites)
 
 nix-store --export $paths_to_save > ~/nix-cache/cache.nar
 

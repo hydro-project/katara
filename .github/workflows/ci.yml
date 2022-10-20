@@ -34,7 +34,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/nix-cache
-          key: nix-ci-shell-cache-${{ hashFiles('ci-shell.nix') }}-${{ hashFiles('poetry.lock') }}
+          key: nix-flake-cache-${{ hashFiles('flake.nix') }}-${{ hashFiles('flake.lock') }}-${{ hashFiles('poetry.lock') }}
 
       - name: Load Nix cache
         if: steps.cache.outputs.cache-hit == 'true'
@@ -43,7 +43,7 @@ jobs:
           rm -rf ~/nix-cache
 
       - name: Run mypy
-        shell: nix-shell ci-shell.nix --run "bash -e {0}"
+        shell: nix develop --command bash -e {0}
         run: mypy .
 
       - name: Save Nix cache
@@ -67,7 +67,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: ~/nix-cache
-        key: nix-ci-shell-cache-${{ hashFiles('ci-shell.nix') }}-${{ hashFiles('poetry.lock') }}
+        key: nix-flake-cache-${{ hashFiles('flake.nix') }}-${{ hashFiles('flake.lock') }}-${{ hashFiles('poetry.lock') }}
 
     - name: Load Nix cache
       if: steps.cache.outputs.cache-hit == 'true'
@@ -98,7 +98,7 @@ jobs:
         raco pkg install --auto --skip-installed https://github.com/emina/rosette.git#10178550a0a21e6d80598d0f43c33c9228728f14
 
     - name: Build LLVM Pass
-      shell: nix-shell ci-shell.nix --run "bash -e {0}"
+      shell: nix develop --command bash -e {0}
       run: |
         cd llvm-pass
         mkdir build
@@ -108,14 +108,14 @@ jobs:
         cd ..
 
     - name: Build Test Inputs
-      shell: nix-shell ci-shell.nix --run "bash -e {0}"
+      shell: nix develop --command bash -e {0}
       run: |
         cd tests
         ./compile-all
         cd ..
 
     - name: Test CRDT Synthesis (fixed)
-      shell: nix-shell ci-shell.nix --run "bash -e {0}"
+      shell: nix develop --command bash -e {0}
       run: |
         python -m tests.synthesize_crdt synth-oplist g_set fixed
         python -m tests.synthesize_crdt synth-oplist 2p_set fixed
