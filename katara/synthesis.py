@@ -11,14 +11,18 @@ from typing import Any, Callable, Union, Protocol
 from metalift.synthesis_common import SynthesisFailed, VerificationFailed
 
 orig_value_ref_type = ValueRef.type
-@property # type: ignore
+
+
+@property  # type: ignore
 def new_value_ref_type(self: ValueRef) -> Any:
     if hasattr(self, "my_type") and self.my_type:
         return self.my_type
     else:
         return orig_value_ref_type.__get__(self)
 
+
 setattr(ValueRef, "type", new_value_ref_type)
+
 
 def observeEquivalence(
     inputState: Expr, synthState: Expr, queryParams: typing.List[Var]
@@ -508,7 +512,11 @@ def synthesize_crdt(
 
     if opArgTypeHint:
         for i in range(len(opArgTypeHint)):
-            setattr(loopAndPsInfoStateTransition[0].readVars[i + 1], "my_type", opArgTypeHint[i])
+            setattr(
+                loopAndPsInfoStateTransition[0].readVars[i + 1],
+                "my_type",
+                opArgTypeHint[i],
+            )
             # loopAndPsInfoStateTransition[0].readVars[i + 1].type = opArgTypeHint[i]  # type: ignore
 
     loopAndPsInfoStateTransition[0].retT = (
@@ -574,7 +582,9 @@ def synthesize_crdt(
 
     if queryArgTypeHint:
         for i in range(len(queryArgTypeHint)):
-            setattr(loopAndPsInfoQuery[0].readVars[i + 1], "my_type", queryArgTypeHint[i])
+            setattr(
+                loopAndPsInfoQuery[0].readVars[i + 1], "my_type", queryArgTypeHint[i]
+            )
             # loopAndPsInfoQuery[0].readVars[i + 1].type = queryArgTypeHint[i]  # type: ignore
 
     loopAndPsInfoQuery[0].retT = (
