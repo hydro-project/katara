@@ -517,7 +517,6 @@ def synthesize_crdt(
                 "my_type",
                 opArgTypeHint[i],
             )
-            # loopAndPsInfoStateTransition[0].readVars[i + 1].type = opArgTypeHint[i]  # type: ignore
 
     loopAndPsInfoStateTransition[0].retT = (
         loopAndPsInfoStateTransition[0].modifiedVars[0].type
@@ -585,7 +584,6 @@ def synthesize_crdt(
             setattr(
                 loopAndPsInfoQuery[0].readVars[i + 1], "my_type", queryArgTypeHint[i]
             )
-            # loopAndPsInfoQuery[0].readVars[i + 1].type = queryArgTypeHint[i]  # type: ignore
 
     loopAndPsInfoQuery[0].retT = (
         loopAndPsInfoQuery[0].modifiedVars[0].type  # type: ignore
