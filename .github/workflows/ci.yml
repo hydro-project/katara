@@ -31,7 +31,7 @@ jobs:
 
       - name: Cache Nix store
         id: cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/nix-cache
           key: nix-flake-cache-${{ hashFiles('flake.nix') }}-${{ hashFiles('flake.lock') }}-${{ hashFiles('poetry.lock') }}
@@ -64,7 +64,7 @@ jobs:
 
     - name: Cache Nix store
       id: cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: ~/nix-cache
         key: nix-flake-cache-${{ hashFiles('flake.nix') }}-${{ hashFiles('flake.lock') }}-${{ hashFiles('poetry.lock') }}
@@ -78,7 +78,7 @@ jobs:
     # https://github.com/Bogdanp/setup-racket-cache-example
     - name: Cache Racket dependencies
       id: cache-racket
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: |
           ~/.cache/racket
