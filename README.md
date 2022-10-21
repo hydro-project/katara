@@ -5,29 +5,14 @@
 Katara is a program synthesis engine that can automatically generate CRDT designs that mirror the behavior of a sequential data type annotated with a conflict resolution policy for non-commutative operations. See our [paper](https://arxiv.org/pdf/2205.12425.pdf) for more information!
 
 ## Setup
-First, make sure you pull the submodule for [metalift](https://github.com/metalift/metalift) by running:
-```bash
-$ git submodule update --init --recursive
-```
-
 ### Install (with Nix)
 To get a development environment up and running, one option is to use [Nix](https://nixos.org/), which can automatically pull and build the necessary dependencies. First, you'll need to [install Nix](https://nixos.org/download.html). Note that this _will_ require temporary root access as Nix sets up a daemon to handle builds, and will set up a separate volume for storing build artifacts if on macOS.
 
-Once you've got Nix installed, you'll need to add the unstable channel to pull bleeding-edge packages as dependencies for cvc5.
-
-```bash
-# if on macOS
-$ sudo -i nix-channel --add https://nixos.org/channels/nixos-unstable nixos-unstable
-$ sudo -i nix-channel --update
-
-# otherwise
-$ sudo nix-channel --add https://nixos.org/channels/nixos-unstable nixos-unstable
-$ sudo nix-channel --update
-```
+Once you've got Nix installed, you'll need to enable [flakes](https://nixos.wiki/wiki/Flakes).
 
 Then, all you have to do is navigate to the Metalift directory and run the following command:
 ```bash
-$ nix-shell
+$ nix develop
 ```
 
 This will build all of Metalift's dependencies and drop you into a temporary shell with all the dependencies available.
