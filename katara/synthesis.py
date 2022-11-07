@@ -343,21 +343,6 @@ def synthesize_crdt(
     afterSynthState = beforeSynthState
     afterQueryArgs = queryArgs
 
-    mode = "init_state"
-
-    (vcVarsInitStateQuery, _, _, vcInitStateQuery, _,) = analyze(
-        filename,
-        fnNameBase + "_response",
-        loopsFile,
-        wrapSummaryCheck=extractQueryParameters,
-        fnNameSuffix=f"_{mode}_query",
-        log=False,
-    )
-
-    initStateOrigState = beforeOrigState
-    initStateSynthState = beforeSynthState
-    initStateQueryArgs = queryArgs
-
     beforeOrigState = beforeOrigStateCopy
     beforeSynthState = beforeSynthStateCopy
     # end query param extraction
@@ -388,7 +373,6 @@ def synthesize_crdt(
             synthStateType = TupleT(*synthStateType.args, ListT(opType))
             beforeSynthState.type = synthStateType
             afterSynthState.type = synthStateType
-            initStateSynthState.type = synthStateType
 
         stateTransitionArgs = [
             Var(f"state_transition_arg_{i}", parseTypeRef(origArgs[i + 1].type))  # type: ignore
