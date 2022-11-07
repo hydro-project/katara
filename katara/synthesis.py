@@ -1,6 +1,7 @@
 import os
 
 from metalift.analysis import CodeInfo, analyze
+from metalift.analysis_new import VariableTracker, analyze as analyze_new
 from metalift.ir import *
 
 from llvmlite.binding import ValueRef
@@ -206,7 +207,7 @@ def synthesize_crdt(
     inOrder: Callable[[typing.Any, typing.Any], Expr],
     opPrecondition: Callable[[typing.Any], Expr],
     grammar: Callable[[CodeInfo, int], Synth],
-    grammarQuery: Callable[[CodeInfo, int], Synth],
+    grammarQuery: Callable[[str, typing.List[Var], Type, int], Synth],
     grammarEquivalence: Callable[[Expr, Expr, typing.List[Var], int], Expr],
     targetLang: Callable[[], typing.List[Union[FnDecl, FnDeclNonRecursive, Axiom]]],
     synthesize: SynthesizeFun,
@@ -224,6 +225,8 @@ def synthesize_crdt(
     skipSynth: bool = False,
 ) -> typing.List[FnDecl]:
     basename = os.path.splitext(os.path.basename(filename))[0]
+
+    tracker = VariableTracker()
     origSynthStateType = synthStateType
 
     opType: Type = None  # type: ignore
@@ -554,124 +557,80 @@ def synthesize_crdt(
     # end state transition (in order)
 
     # begin query
-    def summaryWrapQuery(ps: MLInst) -> typing.Tuple[Expr, typing.List[Expr]]:
-        origReturn = ps.operands[2]
-        origArgs = ps.operands[3:]
-
-        beforeState = typing.cast(ValueRef, origArgs[0])
-
-        beforeStateForQuery = Var(beforeState.name + "_for_query", synthStateType)
-
-        newArgs = list(origArgs)
-        newArgs[0] = beforeStateForQuery
-
-        # unused, but summary wrap needed to swap in synth state argument
-        return (
-            ps,  # type: ignore
-            [origReturn] + newArgs,
-        )
-
-    (_, invAndPsQuery, predsQuery, _, loopAndPsInfoQuery) = analyze(
+    query_analysis = analyze_new(
         filename,
         fnNameBase + "_response",
         loopsFile,
-        wrapSummaryCheck=summaryWrapQuery,
-        log=log,
     )
 
-    if queryArgTypeHint:
-        for i in range(len(queryArgTypeHint)):
-            setattr(
-                loopAndPsInfoQuery[0].readVars[i + 1], "my_type", queryArgTypeHint[i]
-            )
-
-    loopAndPsInfoQuery[0].retT = (
-        loopAndPsInfoQuery[0].modifiedVars[0].type  # type: ignore
-        if queryRetTypeHint == None
-        else queryRetTypeHint
-    )
-    loopAndPsInfoQuery[0].modifiedVars = []
-    invAndPsQuery = [grammarQuery(ci, baseDepth) for ci in loopAndPsInfoQuery]
+    invAndPsQuery = [
+        grammarQuery(
+            query_analysis.name,
+            [Var(query_analysis.arguments[0].name(), synthStateType)]
+            + (
+                [
+                    Var(query_analysis.arguments[i + 1].name(), queryArgTypeHint[i])
+                    for i in range(len(queryArgTypeHint))
+                ]
+                if queryArgTypeHint
+                else query_analysis.arguments[1:]
+            ),
+            query_analysis.return_type
+            if queryRetTypeHint is None
+            else queryRetTypeHint,
+            baseDepth,
+        )
+    ]
     # end query
 
     # begin init state
-    extraVarsInitState = set()
-
-    synthInitState = Var("synth_init_state", synthStateType)
-
-    extraVarsInitState.add(synthInitState)
-
-    init_op_arg_vars = []
-    for i, typ in enumerate(op_arg_types):
-        init_op_arg_vars.append(Var(f"init_op_arg_{i}", typ))
-        extraVarsInitState.add(init_op_arg_vars[-1])
-
-    def summaryWrapInitState(ps: MLInst) -> typing.Tuple[Expr, typing.List[Expr]]:
-        origReturn = ps.operands[2]
-
-        returnedInitState = typing.cast(ValueRef, origReturn)
-
-        queryParamVars = [
-            Var(f"init_state_equivalence_query_param_{i}", queryParameterTypes[i])
-            for i in range(len(queryParameterTypes))
-        ]
-        for v in queryParamVars:
-            extraVarsInitState.add(v)
-
-        return (
-            Implies(
-                And(
-                    Eq(
-                        synthInitState,
-                        Call(f"{fnNameBase}_init_state", synthStateType),
-                    )
-                ),
-                And(
-                    observeEquivalence(
-                        returnedInitState, synthInitState, queryParamVars
-                    ),
-                    Implies(
-                        And(
-                            Eq(returnedInitState, initStateOrigState),
-                            Eq(synthInitState, initStateSynthState),
-                            *[
-                                Eq(a1, a2)
-                                for a1, a2 in zip(queryParamVars, initStateQueryArgs)
-                            ],
-                        ),
-                        vcInitStateQuery,
-                    ),
-                    # opsListInvariant(fnNameBase, synthInitState, synthStateType, opType)
-                    BoolLit(True)
-                    if useOpList
-                    else Implies(
-                        opPrecondition(init_op_arg_vars),
-                        supportedCommand(synthInitState, init_op_arg_vars),
-                    ),
-                ),
-            ),
-            list(ps.operands[2:]),  # type: ignore
-        )
-
-    (
-        vcVarsInitState,
-        invAndPsInitState,
-        predsInitState,
-        vcInitState,
-        loopAndPsInfoInitState,
-    ) = analyze(
+    initState_analysis = analyze_new(
         filename,
         fnNameBase + "_init_state",
         loopsFile,
-        wrapSummaryCheck=summaryWrapInitState,
-        log=log,
     )
 
-    vcVarsInitState = vcVarsInitState.union(extraVarsInitState).union(
-        vcVarsInitStateQuery
+    synthInitState = tracker.variable("synth_init_state", synthStateType)
+
+    init_op_arg_vars = []
+    for i, typ in enumerate(op_arg_types):
+        init_op_arg_vars.append(tracker.variable(f"init_op_arg_{i}", typ))
+
+    queryParamVars = [
+        tracker.variable(
+            f"init_state_equivalence_query_param_{i}", queryParameterTypes[i]
+        )
+        for i in range(len(queryParameterTypes))
+    ]
+
+    vcInitState = initState_analysis.call()(
+        tracker,
+        lambda seqInitialState: Implies(
+            Eq(synthInitState, Call(f"{fnNameBase}_init_state", synthStateType)),
+            And(
+                observeEquivalence(seqInitialState, synthInitState, queryParamVars),
+                query_analysis.call(seqInitialState, *queryParamVars)(
+                    tracker,
+                    lambda seqQueryResult: Eq(
+                        seqQueryResult,
+                        Call(
+                            f"{fnNameBase}_response",
+                            seqQueryResult.type,
+                            synthInitState,
+                            *queryParamVars,
+                        ),
+                    ),
+                ),
+                BoolLit(True)
+                if useOpList
+                else Implies(
+                    opPrecondition(init_op_arg_vars),
+                    supportedCommand(synthInitState, init_op_arg_vars),
+                ),
+            ),
+        ),
     )
-    loopAndPsInfoInitState[0].retT = loopAndPsInfoInitState[0].modifiedVars[0].type
-    loopAndPsInfoInitState[0].modifiedVars = []
+
     initStateSynthNode = initState()
     invAndPsInitState = [
         Synth(
@@ -690,7 +649,7 @@ def synthesize_crdt(
 
     # begin equivalence
     inputStateForEquivalence = Var(
-        "inputState", stateTypeOrig if stateTypeHint == None else stateTypeHint  # type: ignore
+        "inputState", stateTypeOrig if stateTypeHint is None else stateTypeHint
     )
     synthStateForEquivalence = Var("synthState", synthStateType)
 
@@ -729,9 +688,7 @@ def synthesize_crdt(
     argList = [
         Var(
             f"supported_arg_{i}",
-            stateTransitionArgs[i].type
-            if (opArgTypeHint == None)
-            else opArgTypeHint[i],  # type: ignore
+            stateTransitionArgs[i].type if opArgTypeHint is None else opArgTypeHint[i],
         )
         for i in range(len(stateTransitionArgs))
     ]
@@ -754,7 +711,7 @@ def synthesize_crdt(
     if log:
         print("====== synthesis")
 
-    combinedVCVars = vcVarsStateTransition.union(vcVarsInitState)
+    combinedVCVars = vcVarsStateTransition.union(set(tracker.all()))
 
     combinedInvAndPs = (
         invAndPsStateTransition
@@ -764,12 +721,12 @@ def synthesize_crdt(
         + invAndPsSupported
     )
 
-    combinedPreds = predsStateTransition + predsInitState + predsQuery
+    combinedPreds = predsStateTransition
 
     combinedLoopAndPsInfo: typing.List[Union[CodeInfo, Expr]] = (
         loopAndPsInfoStateTransition
-        + loopAndPsInfoQuery
-        + loopAndPsInfoInitState
+        + invAndPsQuery  # type: ignore
+        + invAndPsInitState  # type: ignore
         + invAndPsEquivalence  # type: ignore
         + invAndPsSupported  # type: ignore
     )
@@ -897,7 +854,7 @@ def synthesize_crdt(
                     state_transition_fn.args[1],
                     *state_transition_fn.args[2:],
                 ),
-                lambda _, _baseDepth: Synth(
+                lambda _name, _args, _retT, _baseDepth: Synth(
                     query_fn.args[0], query_fn.args[1], *query_fn.args[2:]
                 ),
                 lambda a, b, _baseDepth, _invariantBoost: equivalence_fn.args[1],  # type: ignore
@@ -938,8 +895,8 @@ def synthesize_crdt(
                         *ci.modifiedVars,
                         *ci.readVars,
                     ),
-                    lambda ci, _baseDepth: Synth(
-                        query_fn.args[0], query_fn.args[1], *ci.readVars
+                    lambda _name, args, _retT, _baseDepth: Synth(
+                        query_fn.args[0], query_fn.args[1], *args
                     ),
                     lambda a, b, c, _baseDepth: equivalence_fn.args[1],  # type: ignore
                     targetLang,

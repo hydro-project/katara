@@ -1,6 +1,7 @@
 import contextlib
 import csv
 from time import time
+from typing import List
 from katara.search_structures import search_crdt_structures
 from metalift.analysis import CodeInfo
 from metalift.ir import *
@@ -59,27 +60,25 @@ def grammarSupportedCommand(synthState, args, synthStateStructure, baseDepth, in
 
 # we make query deeper because it requires more computation
 
-def grammarQuery(ci: CodeInfo, baseDepth):
-    name = ci.name
-
-    if ci.retT == EnumInt():
+def grammarQuery(name: str, args: List[Expr], retT: Type, baseDepth):
+    if retT == EnumInt():
         condition = auto_grammar(
             Bool(),
             baseDepth + 1,
-            *ci.readVars,
+            *args,
             allow_node_id_reductions=True,
         )
 
         summary = Ite(condition, IntLit(1), IntLit(0))
     else:
         summary = auto_grammar(
-            parseTypeRef(ci.retT), baseDepth + 1,
-            *ci.readVars,
+            parseTypeRef(retT), baseDepth + 1,
+            *args,
             enable_ite=True,
             allow_node_id_reductions=True,
         )
 
-    return Synth(name, summary, *ci.readVars)
+    return Synth(name, summary, *args)
 
 
 def grammar(ci: CodeInfo, synthStateStructure, baseDepth):

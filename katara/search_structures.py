@@ -34,7 +34,7 @@ def synthesize_crdt_e2e(
     inOrder: Callable[[Any, Any], Expr],
     opPrecondition: Callable[[Any], Expr],
     grammar: Callable[[CodeInfo, Any, int], ir.Synth],
-    grammarQuery: Callable[[CodeInfo, int], ir.Synth],
+    grammarQuery: Callable[[str, List[ir.Var], ir.Type, int], ir.Synth],
     grammarEquivalence: Callable[[Expr, Expr, List[ir.Var], int], Expr],
     targetLang: Callable[
         [], List[typing.Union[FnDecl, ir.FnDeclNonRecursive, ir.Axiom]]
@@ -104,7 +104,7 @@ def search_crdt_structures(
     inOrder: Callable[[Any, Any], Expr],
     opPrecondition: Callable[[Any], Expr],
     grammar: Callable[[CodeInfo, Any, int], ir.Synth],
-    grammarQuery: Callable[[CodeInfo, int], ir.Synth],
+    grammarQuery: Callable[[str, List[ir.Var], ir.Type, int], ir.Synth],
     grammarEquivalence: Callable[[Expr, Expr, List[ir.Var], int], Expr],
     targetLang: Callable[
         [], List[typing.Union[FnDecl, ir.FnDeclNonRecursive, ir.Axiom]]
