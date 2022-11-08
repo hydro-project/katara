@@ -1,6 +1,7 @@
 import contextlib
 import csv
 from time import time
+from typing import List
 from katara.search_structures import search_crdt_structures
 from metalift.analysis import CodeInfo
 from metalift.ir import *
@@ -59,65 +60,53 @@ def grammarSupportedCommand(synthState, args, synthStateStructure, baseDepth, in
 
 # we make query deeper because it requires more computation
 
-def grammarQuery(ci: CodeInfo, baseDepth):
-    name = ci.name
-
-    if ci.retT == EnumInt():
+def grammarQuery(name: str, args: List[Expr], retT: Type, baseDepth):
+    if retT == EnumInt():
         condition = auto_grammar(
             Bool(),
             baseDepth + 1,
-            *ci.readVars,
+            *args,
             allow_node_id_reductions=True,
         )
 
         summary = Ite(condition, IntLit(1), IntLit(0))
     else:
         summary = auto_grammar(
-            parseTypeRef(ci.retT), baseDepth + 1,
-            *ci.readVars,
+            parseTypeRef(retT), baseDepth + 1,
+            *args,
             enable_ite=True,
             allow_node_id_reductions=True,
         )
 
-    return Synth(name, summary, *ci.readVars)
+    return Synth(name, summary, *args)
 
 
-def grammar(ci: CodeInfo, synthStateStructure, baseDepth):
-    name = ci.name
+def grammar(inputState: Expr, args: List[Expr], synthStateStructure, baseDepth):
+    conditions = [Eq(a, IntLit(1)) for a in args if a.type == EnumInt()]
 
-    if name.startswith("inv"):
-        raise Exception("no invariant")
-    else:  # ps
-        inputState = ci.readVars[0]
-        args = ci.readVars[1:]
+    non_associative_data = []
+    for a in args:
+        if a.type == NodeIDInt():
+            non_associative_data = all_node_id_gets(
+                inputState, a,
+                auto_grammar(None, 0, *args)
+            )
+            break
 
-        conditions = [Eq(a, IntLit(1)) for a in args if a.type == EnumInt()]
-
-        non_associative_data = []
-        for a in args:
-            if a.type == NodeIDInt():
-                non_associative_data = all_node_id_gets(
-                    inputState, a,
-                    auto_grammar(None, 0, *args)
-                )
-                break
-
-        out = Tuple(
-            *[
-                synthStateStructure[i].merge(
-                    TupleGet(inputState, IntLit(i)),
-                    fold_conditions(auto_grammar(
-                        TupleGet(inputState, IntLit(i)).type,
-                        baseDepth,
-                        *args,
-                        *non_associative_data
-                    ), conditions)
-                )
-                for i in range(len(synthStateStructure))
-            ],
-        )
-
-        return Synth(name, out, *ci.modifiedVars, *ci.readVars)
+    return Tuple(
+        *[
+            synthStateStructure[i].merge(
+                TupleGet(inputState, IntLit(i)),
+                fold_conditions(auto_grammar(
+                    TupleGet(inputState, IntLit(i)).type,
+                    baseDepth,
+                    *args,
+                    *non_associative_data
+                ), conditions)
+            )
+            for i in range(len(synthStateStructure))
+        ],
+    )
 
 
 def initState(synthStateStructure):

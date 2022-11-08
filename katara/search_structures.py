@@ -8,7 +8,6 @@ import traceback
 import typing
 
 from katara.lattices import Lattice
-from metalift.analysis import CodeInfo
 from metalift import process_tracker
 from metalift import ir
 from metalift.ir import Expr, FnDecl
@@ -33,8 +32,8 @@ def synthesize_crdt_e2e(
     grammarSupportedCommand: Callable[[Expr, Any, Any, int, int], Expr],
     inOrder: Callable[[Any, Any], Expr],
     opPrecondition: Callable[[Any], Expr],
-    grammar: Callable[[CodeInfo, Any, int], ir.Synth],
-    grammarQuery: Callable[[CodeInfo, int], ir.Synth],
+    grammar: Callable[[Expr, List[ir.Var], Any, int], Expr],
+    grammarQuery: Callable[[str, List[ir.Var], ir.Type, int], ir.Synth],
     grammarEquivalence: Callable[[Expr, Expr, List[ir.Var], int], Expr],
     targetLang: Callable[
         [], List[typing.Union[FnDecl, ir.FnDeclNonRecursive, ir.Axiom]]
@@ -75,7 +74,9 @@ def synthesize_crdt_e2e(
                     ),
                     inOrder,
                     opPrecondition,
-                    lambda ci, baseDepth: grammar(ci, synthStateStructure, baseDepth),
+                    lambda inState, args, baseDepth: grammar(
+                        inState, args, synthStateStructure, baseDepth
+                    ),
                     grammarQuery,
                     grammarEquivalence,
                     targetLang,
@@ -103,8 +104,8 @@ def search_crdt_structures(
     grammarSupportedCommand: Callable[[Expr, Any, Any, int, int], Expr],
     inOrder: Callable[[Any, Any], Expr],
     opPrecondition: Callable[[Any], Expr],
-    grammar: Callable[[CodeInfo, Any, int], ir.Synth],
-    grammarQuery: Callable[[CodeInfo, int], ir.Synth],
+    grammar: Callable[[Expr, List[ir.Var], Any, int], Expr],
+    grammarQuery: Callable[[str, List[ir.Var], ir.Type, int], ir.Synth],
     grammarEquivalence: Callable[[Expr, Expr, List[ir.Var], int], Expr],
     targetLang: Callable[
         [], List[typing.Union[FnDecl, ir.FnDeclNonRecursive, ir.Axiom]]
@@ -178,8 +179,11 @@ def search_crdt_structures(
                                     ),
                                     inOrder,
                                     opPrecondition,
-                                    lambda ci, baseDepth: grammar(
-                                        ci, next_structure_type, baseDepth
+                                    lambda inState, args, baseDepth: grammar(
+                                        inState,
+                                        args,
+                                        next_structure_type,
+                                        baseDepth,
                                     ),
                                     grammarQuery,
                                     grammarEquivalence,

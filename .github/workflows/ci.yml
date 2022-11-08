@@ -1,4 +1,4 @@
-name: Metalift CI
+name: Katara CI
 
 on:
   push:
@@ -35,18 +35,22 @@ jobs:
         with:
           path: ~/nix-cache
           key: nix-flake-cache-${{ hashFiles('flake.nix') }}-${{ hashFiles('flake.lock') }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            nix-flake-cache-
 
       - name: Load Nix cache
-        if: steps.cache.outputs.cache-hit == 'true'
         run: |
-          nix-store --import < ~/nix-cache/cache.nar
-          rm -rf ~/nix-cache
+          if [ -f "$HOME/nix-cache/cache.nar" ]; then
+            nix-store --import < ~/nix-cache/cache.nar
+            rm -rf ~/nix-cache
+          fi
 
       - name: Run mypy
         shell: nix develop --command bash -e {0}
         run: mypy .
 
       - name: Save Nix cache
+        if: steps.cache.outputs.cache-hit != 'true'
         run: ./ci-util/cache-nix.sh
 
   build:
@@ -68,12 +72,15 @@ jobs:
       with:
         path: ~/nix-cache
         key: nix-flake-cache-${{ hashFiles('flake.nix') }}-${{ hashFiles('flake.lock') }}-${{ hashFiles('poetry.lock') }}
+        restore-keys: |
+          nix-flake-cache-
 
     - name: Load Nix cache
-      if: steps.cache.outputs.cache-hit == 'true'
       run: |
-        nix-store --import < ~/nix-cache/cache.nar
-        rm -rf ~/nix-cache
+        if [ -f "$HOME/nix-cache/cache.nar" ]; then
+          nix-store --import < ~/nix-cache/cache.nar
+          rm -rf ~/nix-cache
+        fi
 
     # https://github.com/Bogdanp/setup-racket-cache-example
     - name: Cache Racket dependencies
@@ -117,11 +124,12 @@ jobs:
     - name: Test CRDT Synthesis (fixed)
       shell: nix develop --command bash -e {0}
       run: |
-        python -m tests.synthesize_crdt synth-oplist g_set fixed
-        python -m tests.synthesize_crdt synth-oplist 2p_set fixed
-        python -m tests.synthesize_crdt synth-oplist flag_ew fixed
-        python -m tests.synthesize_crdt synth-oplist flag_dw fixed
-        python -m tests.synthesize_crdt synth-oplist grow_only_counter fixed
+        python -m tests.synthesize_crdt synth g_set fixed
+        python -m tests.synthesize_crdt synth 2p_set fixed
+        python -m tests.synthesize_crdt synth flag_ew fixed
+        python -m tests.synthesize_crdt synth flag_dw fixed
+        python -m tests.synthesize_crdt synth grow_only_counter fixed
 
     - name: Save Nix cache
+      if: steps.cache.outputs.cache-hit != 'true'
       run: ./ci-util/cache-nix.sh
