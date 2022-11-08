@@ -526,7 +526,8 @@ def synthesize_crdt(
             Synth(
                 fnNameBase + "_next_state",
                 Tuple(
-                    stateTransitionSynthNode,
+                    # the grammar directly produces the tupled next state, unpack to tack on the op-list
+                    *stateTransitionSynthNode.args,
                     Call(
                         "list_prepend",
                         ListT(opType),
