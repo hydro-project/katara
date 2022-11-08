@@ -151,8 +151,8 @@ pyparsing = "^3.0.8"
 [package.source]
 type = "git"
 url = "https://github.com/metalift/metalift.git"
-reference = "main"
-resolved_reference = "cf2da2dab8a7685ac46356f53a5f8cd09bbfac71"
+reference = "fix-cache-multiple-calls"
+resolved_reference = "f378074754ea8eb5863230a085b7dd1bf32d6d1a"
 
 [[package]]
 name = "mypy"
@@ -332,7 +332,7 @@ python-versions = ">=3.7"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "7b849ca16e17782700b2a65712e75cc9cc2bbb41d78d07447f3582537ebdb135"
+content-hash = "542d19e9f3d1f40667ef2ce52bc585cb00b1741cf48f217450ba5b3d632796b2"
 
 [metadata.files]
 autoflake = [

@@ -6,7 +6,7 @@ authors = ["Shadaj Laddad <shadaj@users.noreply.github.com>"]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
-metalift = { git = "https://github.com/metalift/metalift.git", branch = "main" }
+metalift = { git = "https://github.com/metalift/metalift.git", branch = "fix-cache-multiple-calls" }
 
 [tool.poetry.dev-dependencies]
 mypy = "^0.950"
