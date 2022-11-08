@@ -206,7 +206,7 @@ def synthesize_crdt(
     grammarSupportedCommand: Callable[[Expr, typing.Any, int, int], Expr],
     inOrder: Callable[[typing.Any, typing.Any], Expr],
     opPrecondition: Callable[[typing.Any], Expr],
-    grammar: Callable[[CodeInfo, int], Synth],
+    grammar: Callable[[Expr, typing.List[Var], int], Expr],
     grammarQuery: Callable[[str, typing.List[Var], Type, int], Synth],
     grammarEquivalence: Callable[[Expr, Expr, typing.List[Var], int], Expr],
     targetLang: Callable[[], typing.List[Union[FnDecl, FnDeclNonRecursive, Axiom]]],
@@ -227,6 +227,13 @@ def synthesize_crdt(
     basename = os.path.splitext(os.path.basename(filename))[0]
 
     tracker = VariableTracker()
+
+    state_transition_analysis = analyze_new(
+        filename,
+        fnNameBase + "_next_state",
+        loopsFile,
+    )
+
     origSynthStateType = synthStateType
 
     opType: Type = None  # type: ignore
@@ -483,7 +490,7 @@ def synthesize_crdt(
         invAndPsStateTransition,
         predsStateTransition,
         vcStateTransition,
-        loopAndPsInfoStateTransition,
+        _,
     ) = analyze(
         filename,
         fnNameBase + "_next_state",
@@ -497,46 +504,52 @@ def synthesize_crdt(
         vcVarsBeforeStateQuery.union(vcVarsAfterStateQuery).union(extraVarsStateQuery)
     )
 
-    if opArgTypeHint:
-        for i in range(len(opArgTypeHint)):
-            setattr(
-                loopAndPsInfoStateTransition[0].readVars[i + 1],
-                "my_type",
-                opArgTypeHint[i],
-            )
-
-    loopAndPsInfoStateTransition[0].retT = (
-        loopAndPsInfoStateTransition[0].modifiedVars[0].type
+    op_arg_vars = (
+        state_transition_analysis.arguments[1:]
+        if opArgTypeHint is None
+        else [
+            Var(v.name(), t)
+            for v, t in zip(state_transition_analysis.arguments[1:], opArgTypeHint)
+        ]
     )
-    loopAndPsInfoStateTransition[0].modifiedVars = []
 
-    stateTransitionSynthNode = grammar(loopAndPsInfoStateTransition[0], baseDepth)
+    cur_state_param = Var("cur_state", synthStateType)
+
+    stateTransitionSynthNode = grammar(
+        cur_state_param,
+        op_arg_vars,
+        baseDepth,
+    )
 
     invAndPsStateTransition = (
         [
             Synth(
-                stateTransitionSynthNode.args[0],
+                fnNameBase + "_next_state",
                 Tuple(
-                    *stateTransitionSynthNode.args[1].args,
+                    stateTransitionSynthNode,
                     Call(
                         "list_prepend",
                         ListT(opType),
-                        Tuple(*loopAndPsInfoStateTransition[0].readVars[1:])
-                        if len(loopAndPsInfoStateTransition[0].readVars[1:]) > 1
-                        else loopAndPsInfoStateTransition[0].readVars[1],
+                        Tuple(*op_arg_vars) if len(op_arg_vars) > 1 else op_arg_vars[0],
                         TupleGet(
-                            typing.cast(
-                                Expr, loopAndPsInfoStateTransition[0].readVars[0]
-                            ),
+                            cur_state_param,
                             IntLit(len(synthStateType.args) - 1),
                         ),
                     ),
                 ),
-                *stateTransitionSynthNode.args[2:],
+                cur_state_param,
+                *op_arg_vars,
             )
         ]
         if useOpList
-        else [stateTransitionSynthNode]
+        else [
+            Synth(
+                fnNameBase + "_next_state",
+                stateTransitionSynthNode,
+                cur_state_param,
+                *op_arg_vars,
+            )
+        ]
     )
     # end state transition (in order)
 
@@ -706,14 +719,6 @@ def synthesize_crdt(
     )
 
     combinedPreds = predsStateTransition
-
-    combinedLoopAndPsInfo: typing.List[Union[CodeInfo, Expr]] = (
-        loopAndPsInfoStateTransition
-        + invAndPsQuery  # type: ignore
-        + invAndPsInitState  # type: ignore
-        + invAndPsEquivalence  # type: ignore
-        + invAndPsSupported  # type: ignore
-    )
     combinedVC = And(vcStateTransition, vcInitState)
 
     lang = targetLang()
@@ -733,7 +738,7 @@ def synthesize_crdt(
             combinedInvAndPs,
             combinedPreds,
             combinedVC,
-            combinedLoopAndPsInfo,
+            [*combinedInvAndPs],
             cvcPath,
             uid=uid,
             unboundedInts=unboundedInts,
@@ -801,6 +806,7 @@ def synthesize_crdt(
             TupleT(*state_transition_fn.args[2].type.args[:-1]),
         )
 
+        # drop the op-list
         state_transition_fn.args[1] = Tuple(
             *[
                 e.rewrite(
@@ -833,10 +839,13 @@ def synthesize_crdt(
                 grammarSupportedCommand,
                 inOrder,
                 opPrecondition,
-                lambda _, _baseDepth: Synth(
-                    state_transition_fn.args[0],
-                    state_transition_fn.args[1],
-                    *state_transition_fn.args[2:],
+                lambda inState, args, _baseDepth: typing.cast(
+                    Expr, state_transition_fn.args[1]
+                ).rewrite(
+                    {
+                        cur_state_param.name(): inState,
+                        **{orig.name(): new for orig, new in zip(op_arg_vars, args)},
+                    }
                 ),
                 lambda _name, _args, _retT, _baseDepth: Synth(
                     query_fn.args[0], query_fn.args[1], *query_fn.args[2:]
@@ -873,11 +882,15 @@ def synthesize_crdt(
                     grammarSupportedCommand,
                     inOrder,
                     opPrecondition,
-                    lambda ci, _baseDepth: Synth(
-                        state_transition_fn.args[0],
-                        state_transition_fn.args[1],
-                        *ci.modifiedVars,
-                        *ci.readVars,
+                    lambda inState, args, _baseDepth: typing.cast(
+                        Expr, state_transition_fn.args[1]
+                    ).rewrite(
+                        {
+                            cur_state_param.name(): inState,
+                            **{
+                                orig.name(): new for orig, new in zip(op_arg_vars, args)
+                            },
+                        }
                     ),
                     lambda _name, args, _retT, _baseDepth: Synth(
                         query_fn.args[0], query_fn.args[1], *args

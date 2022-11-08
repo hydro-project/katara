@@ -81,42 +81,32 @@ def grammarQuery(name: str, args: List[Expr], retT: Type, baseDepth):
     return Synth(name, summary, *args)
 
 
-def grammar(ci: CodeInfo, synthStateStructure, baseDepth):
-    name = ci.name
+def grammar(inputState: Expr, args: List[Expr], synthStateStructure, baseDepth):
+    conditions = [Eq(a, IntLit(1)) for a in args if a.type == EnumInt()]
 
-    if name.startswith("inv"):
-        raise Exception("no invariant")
-    else:  # ps
-        inputState = ci.readVars[0]
-        args = ci.readVars[1:]
+    non_associative_data = []
+    for a in args:
+        if a.type == NodeIDInt():
+            non_associative_data = all_node_id_gets(
+                inputState, a,
+                auto_grammar(None, 0, *args)
+            )
+            break
 
-        conditions = [Eq(a, IntLit(1)) for a in args if a.type == EnumInt()]
-
-        non_associative_data = []
-        for a in args:
-            if a.type == NodeIDInt():
-                non_associative_data = all_node_id_gets(
-                    inputState, a,
-                    auto_grammar(None, 0, *args)
-                )
-                break
-
-        out = Tuple(
-            *[
-                synthStateStructure[i].merge(
-                    TupleGet(inputState, IntLit(i)),
-                    fold_conditions(auto_grammar(
-                        TupleGet(inputState, IntLit(i)).type,
-                        baseDepth,
-                        *args,
-                        *non_associative_data
-                    ), conditions)
-                )
-                for i in range(len(synthStateStructure))
-            ],
-        )
-
-        return Synth(name, out, *ci.modifiedVars, *ci.readVars)
+    return Tuple(
+        *[
+            synthStateStructure[i].merge(
+                TupleGet(inputState, IntLit(i)),
+                fold_conditions(auto_grammar(
+                    TupleGet(inputState, IntLit(i)).type,
+                    baseDepth,
+                    *args,
+                    *non_associative_data
+                ), conditions)
+            )
+            for i in range(len(synthStateStructure))
+        ],
+    )
 
 
 def initState(synthStateStructure):
