@@ -234,9 +234,22 @@ def synthesize_crdt(
         loopsFile,
     )
 
+    query_analysis = analyze_new(
+        filename,
+        fnNameBase + "_response",
+        loopsFile,
+    )
+
     origSynthStateType = synthStateType
 
-    opType: Type = None  # type: ignore
+    op_arg_types = [v.type for v in state_transition_analysis.arguments[1:]]
+    opType = TupleT(*op_arg_types) if len(op_arg_types) > 1 else op_arg_types[1]
+
+    queryParameterTypes = (
+        [v.type for v in query_analysis.arguments[1:]]
+        if queryArgTypeHint is None
+        else queryArgTypeHint
+    )
 
     def supportedCommandWithList(synthState: Expr, args: typing.Any) -> Expr:
         return And(
@@ -266,7 +279,7 @@ def synthesize_crdt(
         )
 
     # analyze query just to grab the query parameters
-    queryParameterTypes = []
+
     beforeOrigState: Expr = None  # type: ignore
     beforeSynthState: Expr = None  # type: ignore
     extraVarsStateQuery: typing.Set[Var] = set()
@@ -275,15 +288,9 @@ def synthesize_crdt(
     mode = "before_state"
 
     def extractQueryParameters(ps: MLInst) -> typing.Tuple[Expr, typing.List[Expr]]:
-        nonlocal queryParameterTypes
         nonlocal beforeOrigState
         nonlocal beforeSynthState
         nonlocal queryArgs
-
-        if queryArgTypeHint:
-            queryParameterTypes = queryArgTypeHint
-        else:
-            queryParameterTypes = [parseTypeRef(v.type) for v in ps.operands[4:]]  # type: ignore
 
         origReturn = ps.operands[2]
         origArgs = ps.operands[3:]
@@ -357,7 +364,6 @@ def synthesize_crdt(
     # begin state transition (in order)
     stateTypeOrig: Type = None  # type: ignore
     stateTransitionArgs: typing.List[Var] = []
-    op_arg_types: typing.List[Type] = []
 
     extraVarsStateTransition: typing.Set[Var] = set()
 
@@ -366,16 +372,11 @@ def synthesize_crdt(
     ) -> typing.Tuple[Expr, typing.List[Expr]]:
         nonlocal stateTypeOrig
         nonlocal stateTransitionArgs
-        nonlocal op_arg_types
-        nonlocal opType
         nonlocal synthStateType
 
         origReturn = ps.operands[2]
         origArgs = ps.operands[3:]
 
-        for i in range(len(origArgs) - 1):
-            op_arg_types.append(parseTypeRef(origArgs[i + 1].type))  # type: ignore
-        opType = TupleT(*op_arg_types) if len(op_arg_types) > 1 else op_arg_types[0]
         if useOpList:
             synthStateType = TupleT(*synthStateType.args, ListT(opType))
             beforeSynthState.type = synthStateType
@@ -555,12 +556,6 @@ def synthesize_crdt(
     # end state transition (in order)
 
     # begin query
-    query_analysis = analyze_new(
-        filename,
-        fnNameBase + "_response",
-        loopsFile,
-    )
-
     invAndPsQuery = [
         grammarQuery(
             query_analysis.name,
