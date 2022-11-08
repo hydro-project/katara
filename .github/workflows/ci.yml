@@ -1,4 +1,4 @@
-name: Metalift CI
+name: Katara CI
 
 on:
   push:
