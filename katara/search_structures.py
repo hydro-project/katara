@@ -8,7 +8,6 @@ import traceback
 import typing
 
 from katara.lattices import Lattice
-from metalift.analysis import CodeInfo
 from metalift import process_tracker
 from metalift import ir
 from metalift.ir import Expr, FnDecl

@@ -1,7 +1,6 @@
 import os
 
-from metalift.analysis import CodeInfo
-from metalift.analysis_new import VariableTracker, analyze as analyze_new
+from metalift.analysis_new import VariableTracker, analyze
 from metalift.ir import *
 
 import typing
@@ -168,7 +167,7 @@ class SynthesizeFun(Protocol):
         invAndPs: typing.List[Synth],
         preds: Union[str, typing.List[Expr]],
         vc: Expr,
-        loopAndPsInfo: typing.List[Union[CodeInfo, Expr]],
+        loopAndPsInfo: typing.List[Expr],
         cvcPath: str = "cvc5",
         uid: int = 0,
         noVerify: bool = False,
@@ -213,13 +212,13 @@ def synthesize_crdt(
 
     tracker = VariableTracker()
 
-    state_transition_analysis = analyze_new(
+    state_transition_analysis = analyze(
         filename,
         fnNameBase + "_next_state",
         loopsFile,
     )
 
-    query_analysis = analyze_new(
+    query_analysis = analyze(
         filename,
         fnNameBase + "_response",
         loopsFile,
@@ -441,7 +440,7 @@ def synthesize_crdt(
     # end query
 
     # begin init state
-    initState_analysis = analyze_new(
+    initState_analysis = analyze(
         filename,
         fnNameBase + "_init_state",
         loopsFile,
