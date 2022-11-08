@@ -152,7 +152,7 @@ pyparsing = "^3.0.8"
 type = "git"
 url = "https://github.com/metalift/metalift.git"
 reference = "main"
-resolved_reference = "ab006f68e754ca10aaaeb2119896a680219f4ac0"
+resolved_reference = "84ba5cf2955b72af2c0a558bf4ee04a5fcd74323"
 
 [[package]]
 name = "mypy"
