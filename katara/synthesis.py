@@ -11,20 +11,6 @@ from typing import Any, Callable, Union, Protocol
 
 from metalift.synthesis_common import SynthesisFailed, VerificationFailed
 
-orig_value_ref_type = ValueRef.type
-
-
-@property  # type: ignore
-def new_value_ref_type(self: ValueRef) -> Any:
-    if hasattr(self, "my_type") and self.my_type:
-        return self.my_type
-    else:
-        return orig_value_ref_type.__get__(self)
-
-
-setattr(ValueRef, "type", new_value_ref_type)
-
-
 def observeEquivalence(
     inputState: Expr, synthState: Expr, queryParams: typing.List[Var]
 ) -> Expr:
