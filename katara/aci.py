@@ -166,7 +166,7 @@ def check_i(filename: str, fnNameBase: str, loopsFile: str, cvcPath: str) -> Non
         [],
         [],
         vc,
-        "./synthesisLogs/aci-test.smt",
+        "./synthesisLogs/idempotence-test.smt",
         [],
         [],
     )
@@ -177,7 +177,7 @@ def check_i(filename: str, fnNameBase: str, loopsFile: str, cvcPath: str) -> Non
             "--lang=smt",
             "--produce-models",
             "--tlimit=100000",
-            "./synthesisLogs/aci-test.smt",
+            "./synthesisLogs/idempotence-test.smt",
         ],
         stdout=subprocess.PIPE,
     )
