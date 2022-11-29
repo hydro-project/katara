@@ -7,6 +7,9 @@ from metalift.smt_util import toSMT
 import subprocess
 from metalift.synthesize_cvc5 import generateAST, toExpr
 
+import typing
+from typing import Any
+
 
 def check_aci(filename: str, fnNameBase: str, loopsFile: str, cvcPath: str) -> None:
     """Check if the actor is commutative and idempotent.
@@ -141,7 +144,7 @@ def check_i(filename: str, fnNameBase: str, loopsFile: str, cvcPath: str) -> Non
         loopsFile (str): path to the file containing the loop information
         cvcPath (str): path to the cvc5 executable
     """
-    
+
     state_transition_analysis = analyze_new(
         filename, fnNameBase + "_next_state", loopsFile
     )
@@ -210,7 +213,9 @@ def check_i(filename: str, fnNameBase: str, loopsFile: str, cvcPath: str) -> Non
         print(f"Initial State: {lookup_var(initial_state, resultVerify)}")
         print()
         print(f"After 1 operation: {lookup_var(afterState_op, resultVerify)}")
-        print(f"After 2 operations (op + op): {lookup_var(afterState_op_op, resultVerify)}")
+        print(
+            f"After 2 operations (op + op): {lookup_var(afterState_op_op, resultVerify)}"
+        )
     else:
         print("Actor is Idempotent")
 
@@ -242,9 +247,9 @@ if __name__ == "__main__":
     fnNameBase = "test"
     loopsFile = f"tests/{sys.argv[1]}.loops"
     cvcPath = "cvc5"
-    
+
     if len(sys.argv) > 2:
-        checkType = sys.argv[2] # "c" for commutativity, "i" for idempotence
+        checkType = sys.argv[2]  # "c" for commutativity, "i" for idempotence
         if checkType == "i":
             check_i(filename, fnNameBase, loopsFile, cvcPath)
         elif checkType == "c":
