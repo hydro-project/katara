@@ -9,11 +9,11 @@ from metalift.synthesize_cvc5 import generateAST, toExpr
 
 
 def check_aci(filename: str, fnNameBase: str, loopsFile: str, cvcPath: str) -> None:
-    check_a(filename, fnNameBase, loopsFile, cvcPath)
+    check_c(filename, fnNameBase, loopsFile, cvcPath)
     check_i(filename, fnNameBase, loopsFile, cvcPath)
 
 
-def check_a(filename: str, fnNameBase: str, loopsFile: str, cvcPath: str) -> None:
+def check_c(filename: str, fnNameBase: str, loopsFile: str, cvcPath: str) -> None:
     state_transition_analysis = analyze_new(
         filename, fnNameBase + "_next_state", loopsFile
     )
@@ -193,7 +193,7 @@ def check_i(filename: str, fnNameBase: str, loopsFile: str, cvcPath: str) -> Non
     
     if resultVerify[0] == "sat" or resultVerify[0] == "unknown":
         print("Counterexample Found for Idempotence Check")
-        print(f"Operation: {[lookup_var(v) for v in op]}")
+        print(f"Operations: {[lookup_var(v) for v in op]}")
         print(f"Initial State: {lookup_var(initial_state)}")
         print()
         print(f"After 1 operation: {lookup_var(afterState_op)}")
@@ -209,5 +209,11 @@ if __name__ == "__main__":
     fnNameBase = "test"
     loopsFile = f"tests/{sys.argv[1]}.loops"
     cvcPath = "cvc5"
+    checkType = sys.argv[2]
 
-    check_aci(filename, fnNameBase, loopsFile, cvcPath)
+    if checkType == "i":
+        check_i(filename, fnNameBase, loopsFile, cvcPath)
+    elif checkType == "c":
+        check_c(filename, fnNameBase, loopsFile, cvcPath)
+    else:
+        check_aci(filename, fnNameBase, loopsFile, cvcPath)
