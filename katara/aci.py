@@ -9,11 +9,27 @@ from metalift.synthesize_cvc5 import generateAST, toExpr
 
 
 def check_aci(filename: str, fnNameBase: str, loopsFile: str, cvcPath: str) -> None:
+    """Check if the actor is commutative and idempotent.
+
+    Args:
+        filename (str): path to the file containing the actor
+        fnNameBase (str): name of the actor
+        loopsFile (str): path to the file containing the loop information
+        cvcPath (str): path to the CVC4 executable
+    """
     check_c(filename, fnNameBase, loopsFile, cvcPath)
     check_i(filename, fnNameBase, loopsFile, cvcPath)
 
 
 def check_c(filename: str, fnNameBase: str, loopsFile: str, cvcPath: str) -> None:
+    """Check if the actor is commutative.
+
+    Args:
+        filename (str): path to the file containing the actor
+        fnNameBase (str): name of the actor
+        loopsFile (str): path to the file containing the loop information
+        cvcPath (str): path to the cvc5 executable
+    """
     state_transition_analysis = analyze_new(
         filename, fnNameBase + "_next_state", loopsFile
     )
@@ -101,28 +117,31 @@ def check_c(filename: str, fnNameBase: str, loopsFile: str, cvcPath: str) -> Non
     procOutput = procVerify.stdout
     resultVerify = procOutput.decode("utf-8").split("\n")
 
-    def lookup_var(v: Expr) -> Expr:
-        for line in resultVerify:
-            if line.startswith("(define-fun " + v.args[0] + " "):
-                return toExpr(generateAST(line)[0][4], [], [], {}, {})
-        raise Exception("Could not find variable " + v.args[0])
-
     if resultVerify[0] == "sat" or resultVerify[0] == "unknown":
         print("Counterexample Found for Commutativity Check")
-        print(f"Operation 1: {[lookup_var(v) for v in op1]}")
-        print(f"Operation 2: {[lookup_var(v) for v in op2]}")
-        print(f"Initial State: {lookup_var(initial_state)}")
+        print(f"Operation 1: {[lookup_var(v, resultVerify) for v in op1]}")
+        print(f"Operation 2: {[lookup_var(v, resultVerify) for v in op2]}")
+        print(f"Initial State: {lookup_var(initial_state, resultVerify)}")
         print()
-        print(f"Actor 1 (after op 1): {lookup_var(afterState_0_op1)}")
-        print(f"Actor 1 (after op 1 + 2): {lookup_var(afterState_0_op2)}")
+        print(f"Actor 1 (after op 1): {lookup_var(afterState_0_op1, resultVerify)}")
+        print(f"Actor 1 (after op 1 + 2): {lookup_var(afterState_0_op2, resultVerify)}")
         print()
-        print(f"Actor 2 (after op 2): {lookup_var(afterState_1_op2)}")
-        print(f"Actor 2 (after op 2 + 1): {lookup_var(afterState_1_op1)}")
+        print(f"Actor 2 (after op 2): {lookup_var(afterState_1_op2, resultVerify)}")
+        print(f"Actor 2 (after op 2 + 1): {lookup_var(afterState_1_op1, resultVerify)}")
     else:
         print("Actor is commutative")
 
 
 def check_i(filename: str, fnNameBase: str, loopsFile: str, cvcPath: str) -> None:
+    """Check if the actor is idempotent.
+
+    Args:
+        filename (str): path to the file containing the actor
+        fnNameBase (str): name of the actor
+        loopsFile (str): path to the file containing the loop information
+        cvcPath (str): path to the cvc5 executable
+    """
+    
     state_transition_analysis = analyze_new(
         filename, fnNameBase + "_next_state", loopsFile
     )
@@ -185,23 +204,37 @@ def check_i(filename: str, fnNameBase: str, loopsFile: str, cvcPath: str) -> Non
     procOutput = procVerify.stdout
     resultVerify = procOutput.decode("utf-8").split("\n")
 
-    def lookup_var(v: Expr) -> Expr:
-        for line in resultVerify:
-            if line.startswith("(define-fun " + v.args[0] + " "):
-                return toExpr(generateAST(line)[0][4], [], [], {}, {})
-        raise Exception("Could not find variable " + v.args[0])
-
     if resultVerify[0] == "sat" or resultVerify[0] == "unknown":
         print("Counterexample Found for Idempotence Check")
-        print(f"Operations: {[lookup_var(v) for v in op]}")
-        print(f"Initial State: {lookup_var(initial_state)}")
+        print(f"Operations: {[lookup_var(v, resultVerify) for v in op]}")
+        print(f"Initial State: {lookup_var(initial_state, resultVerify)}")
         print()
-        print(f"After 1 operation: {lookup_var(afterState_op)}")
-        print(f"After 2 operations (op + op): {lookup_var(afterState_op_op)}")
+        print(f"After 1 operation: {lookup_var(afterState_op, resultVerify)}")
+        print(f"After 2 operations (op + op): {lookup_var(afterState_op_op, resultVerify)}")
     else:
         print("Actor is Idempotent")
 
     pass
+
+
+def lookup_var(v: Expr, resultVerify: typing.List[Any]) -> Expr:
+    """Given a variable and a list of lines from the CVC4 output, find the function
+    which defines the variable and return the value of the variable in the counterexample.
+
+    Args:
+        v (Expr): variable to look up
+        resultVerify (typing.List[Any]): list of lines from CVC4 output
+
+    Raises:
+        Exception: if the variable cannot be found
+
+    Returns:
+        Expr: value of the variable in the counterexample
+    """
+    for line in resultVerify:
+        if line.startswith("(define-fun " + v.args[0] + " "):
+            return toExpr(generateAST(line)[0][4], [], [], {}, {})
+    raise Exception("Could not find variable " + v.args[0])
 
 
 if __name__ == "__main__":
@@ -209,11 +242,12 @@ if __name__ == "__main__":
     fnNameBase = "test"
     loopsFile = f"tests/{sys.argv[1]}.loops"
     cvcPath = "cvc5"
-    checkType = sys.argv[2]
-
-    if checkType == "i":
-        check_i(filename, fnNameBase, loopsFile, cvcPath)
-    elif checkType == "c":
-        check_c(filename, fnNameBase, loopsFile, cvcPath)
+    
+    if len(sys.argv) > 2:
+        checkType = sys.argv[2] # "c" for commutativity, "i" for idempotence
+        if checkType == "i":
+            check_i(filename, fnNameBase, loopsFile, cvcPath)
+        elif checkType == "c":
+            check_c(filename, fnNameBase, loopsFile, cvcPath)
     else:
         check_aci(filename, fnNameBase, loopsFile, cvcPath)
