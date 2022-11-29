@@ -132,20 +132,20 @@ def check_i(filename: str, fnNameBase: str, loopsFile: str, cvcPath: str) -> Non
     initial_state = tracker.variable(
         "initial_state", state_transition_analysis.arguments[0].type
     )
-    
+
     op_group = tracker.group("op")
     op = [
         op_group.variable(v.name(), v.type)
-        for v in state_transition_analysis.arguments[1:]  
+        for v in state_transition_analysis.arguments[1:]
     ]
-    
+
     afterState_op = tracker.variable(
         "afterState_op", state_transition_analysis.arguments[0].type
     )
     afterState_op_op = tracker.variable(
         "afterState_op_op", state_transition_analysis.arguments[0].type
     )
-    
+
     vc = state_transition_analysis.call(initial_state, *op)(
         tracker,
         lambda obj0_after_op: Implies(
@@ -154,12 +154,12 @@ def check_i(filename: str, fnNameBase: str, loopsFile: str, cvcPath: str) -> Non
                 tracker,
                 lambda obj0_after_op_op: Implies(
                     Eq(obj0_after_op_op, afterState_op_op),
-                    Eq(obj0_after_op, obj0_after_op_op)
-                )
-            )
-        )
+                    Eq(obj0_after_op, obj0_after_op_op),
+                ),
+            ),
+        ),
     )
-    
+
     toSMT(
         [],
         set(tracker.all()),
@@ -190,7 +190,7 @@ def check_i(filename: str, fnNameBase: str, loopsFile: str, cvcPath: str) -> Non
             if line.startswith("(define-fun " + v.args[0] + " "):
                 return toExpr(generateAST(line)[0][4], [], [], {}, {})
         raise Exception("Could not find variable " + v.args[0])
-    
+
     if resultVerify[0] == "sat" or resultVerify[0] == "unknown":
         print("Counterexample Found for Idempotence Check")
         print(f"Operations: {[lookup_var(v) for v in op]}")
@@ -199,8 +199,8 @@ def check_i(filename: str, fnNameBase: str, loopsFile: str, cvcPath: str) -> Non
         print(f"After 1 operation: {lookup_var(afterState_op)}")
         print(f"After 2 operations (op + op): {lookup_var(afterState_op_op)}")
     else:
-        print("Actor is Idempotent") 
-    
+        print("Actor is Idempotent")
+
     pass
 
 
