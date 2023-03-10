@@ -33,33 +33,31 @@ We use [Poetry](https://python-poetry.org/) for dependency management. To set up
 **We currently support LLVM 11**
 
 Run the following to build the LLVM pass for processing branch instructions (works for LLVM 11):
-````angular2
+````bash
 cd llvm-pass
 mkdir build
 cd build
 cmake ..
 make 
-cd ..
+cd ../..
 ```` 
-Then run it with:
-````angular2
-opt -load build/addEmptyBlocks/libAddEmptyBlocksPass.so -addEmptyBlock -S <.ll name>
-````
+
 This pass is called in `tests/compile-add-blocks`.
 
 ## Synthesizing CRDTs
 The first step to synthesizing a CRDT is to compile the sequential reference. We have provided a set of benchmark sequential data types in the `tests/` folder. These can be compiled by entering the folder and running `compile-all`:
 ```bash
-$ cd tests
-$ ./compile-all
+cd tests
+./compile-all
+cd ..
 ```
 
 Then, from the base directory of the project, we can run the synthesis benchmarks defined in `tests/synthesize_crdt.py` (in the `benchmarks` variable). Each benchmark is configured with the sequential data type to process, the ordering constraing as defined in our paper (`opOrder`), flags to enable synthesis of non-idempotent operations, and type hints to optimize the synthesis process. With a benchmark configured, we can run it as
 ```bash
-$ python -m tests.synthesize_crdt synth <BENCHMARK NAME>
+python -m tests.synthesize_crdt synth <BENCHMARK NAME>
 ```
 
 For example, we can synthesize for the 2P-Set benchmark with
 ```bash
-$ python -m tests.synthesize_crdt synth 2p_set
+python -m tests.synthesize_crdt synth 2p_set
 ```

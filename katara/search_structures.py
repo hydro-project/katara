@@ -200,7 +200,6 @@ def search_crdt_structures(
                                     skipSynth=True,
                                 )
                             except KeyError as k:
-                                print(k)
                                 # this is due to a grammar not being able to find a value
                                 continue
 

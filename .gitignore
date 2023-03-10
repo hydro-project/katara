@@ -9,3 +9,6 @@ results*.csv
 search*.csv
 distribution*.png
 dist/
+rosette-packages/packages
+result
+nixos.qcow2
