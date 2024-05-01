@@ -61,3 +61,14 @@ For example, we can synthesize for the 2P-Set benchmark with
 ```bash
 python -m tests.synthesize_crdt synth 2p_set
 ```
+
+In general, you can use the following command structure:
+```bash
+python -m tests.synthesize_crdt <mode> <benchmark> [--fixed] [--first <N>] [--repeat <N>]
+```
+Where:
+- `<mode>` is either `synth` for bounded synthesis with pruning or `synth-unbounded` for direct unbounded synthesis.
+- `<benchmark>` is the name of the benchmark or `all` to run all benchmarks.
+- `--fixed` (optional) uses a fixed lattice structure instead of exploring all structures.
+- `--first <N>` (optional) synthesizes the first N structures.
+- `--repeat <N>` (optional) specifies the number of repetitions for the synthesis process.

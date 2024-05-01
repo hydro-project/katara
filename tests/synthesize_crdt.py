@@ -1,3 +1,4 @@
+import argparse
 import contextlib
 import csv
 from time import time
@@ -261,12 +262,21 @@ def increasing_depth_structures(underlying):
             yield (base_depth, struct)
         base_depth += 1
 
-if __name__ == "__main__":
-    mode = sys.argv[1]
-    bench = sys.argv[2]
-    fixed_structure = len(sys.argv) >= 4 and sys.argv[3] == "fixed"
-    first_n = int(sys.argv[3].split("first_")[1]) if (len(sys.argv) >= 4 and sys.argv[3].startswith("first_")) else None
-    reps = int(sys.argv[3].split("repeat_")[1]) if (len(sys.argv) >= 4 and sys.argv[3].startswith("repeat_")) else 1
+def main():
+    parser = argparse.ArgumentParser(description='Synthesize CRDTs from sequential types.')
+    parser.add_argument('mode', choices=['synth', 'synth-unbounded'], help='synthesis mode')
+    parser.add_argument('benchmark', help='benchmark name or "all"')
+    parser.add_argument('--fixed', action='store_true', help='use fixed lattice structure')
+    parser.add_argument('--first', type=int, help='synthesize the first N structures')
+    parser.add_argument('--repeat', type=int, default=1, help='number of repetitions')
+
+    args = parser.parse_args()
+
+    mode = args.mode
+    bench = args.benchmark
+    fixed_structure = args.fixed
+    first_n = args.first
+    reps = args.repeat
 
     if bench == "all":
         benches = list(benchmarks.keys())
@@ -353,3 +363,6 @@ if __name__ == "__main__":
                             for (i, time) in enumerate(times):
                                 percent = (i + 1) / len(times)
                                 distribution_file.write(f"{time},{percent}\n")
+
+if __name__ == "__main__":
+    main()
