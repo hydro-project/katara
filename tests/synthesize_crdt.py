@@ -360,9 +360,9 @@ def main():
                         times = sorted([float(row[1]) for row in report_reader])
                         with open(f"benchmarks-{bench}-{bounded_bench_str}-first_{first_n}-distribution.csv", "w") as distribution_file:
                             distribution_file.write(f"time,percent\n")
-                            for (i, time) in enumerate(times):
+                            for (i, measured_time) in enumerate(times):
                                 percent = (i + 1) / len(times)
-                                distribution_file.write(f"{time},{percent}\n")
+                                distribution_file.write(f"{measured_time},{percent}\n")
 
 if __name__ == "__main__":
     main()
