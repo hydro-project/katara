@@ -124,11 +124,11 @@ jobs:
     - name: Test CRDT Synthesis (fixed)
       shell: nix develop --command bash -e {0}
       run: |
-        python -m tests.synthesize_crdt synth g_set fixed
-        python -m tests.synthesize_crdt synth 2p_set fixed
-        python -m tests.synthesize_crdt synth flag_ew fixed
-        python -m tests.synthesize_crdt synth flag_dw fixed
-        python -m tests.synthesize_crdt synth grow_only_counter fixed
+        python -m tests.synthesize_crdt synth g_set --fixed
+        python -m tests.synthesize_crdt synth 2p_set --fixed
+        python -m tests.synthesize_crdt synth flag_ew --fixed
+        python -m tests.synthesize_crdt synth flag_dw --fixed
+        python -m tests.synthesize_crdt synth grow_only_counter --fixed
 
     - name: Save Nix cache
       if: steps.cache.outputs.cache-hit != 'true'
