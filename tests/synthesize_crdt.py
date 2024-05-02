@@ -250,7 +250,7 @@ def has_node_id(tup):
             return True
     return False
 
-def increasing_depth_structures(underlying):
+def increasing_depth_structures(underlying, nonIdempotent):
     base_depth = 1
     while True:
         # we synthesize structures of complexity base_depth + 1
@@ -306,7 +306,8 @@ def main():
                     (lambda base_depth: lat.gen_structures(base_depth))
                     if not fixed_structure
                     else
-                    (lambda _: [bench_data["fixedLatticeType"]])
+                    (lambda _: [bench_data["fixedLatticeType"]]),
+                    nonIdempotent
                 )
 
                 start_time = time()
